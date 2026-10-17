@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="description" content="Add, change, reorder and delete the apps and shortcuts on your PC Remote without typing code. Runs in your browser: nothing is uploaded.">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Edit apps &amp; shortcuts · PC Remote</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-2: #12151d;
+    --card: #181b24;
+    --card-2: #20242f;
+    --border: #2a2f3c;
+    --text: #e9ebf1;
+    --muted: #8b91a3;
+    --accent: #6d8bff;
+    --accent-2: #8f6dff;
+    --ok: #3ddc97;
+    --warn: #ffc56d;
+    --bad: #ff7a7a;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: var(--accent); }
+  h1, h2, h3 { line-height: 1.2; margin: 0; }
+  p { margin: 0; }
+  .hidden { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
+  .ic { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  code, kbd, pre, textarea.code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+  kbd { font-size: .85em; font-weight: 600; background: var(--card-2); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px; color: var(--text); white-space: nowrap; }
+
+  /* ---------- Nav ---------- */
+  nav { position: sticky; top: 0; z-index: 5; background: rgba(15,17,23,.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 700; font-size: 18px; }
+  .brand img { width: 34px; height: 34px; border-radius: 10px; }
+  .back { color: var(--muted); text-decoration: none; font-size: 15px; }
+  .back:hover { color: var(--text); }
+
+  /* ---------- Page ---------- */
+  header { padding: 40px 0 4px; }
+  header h1 { font-size: clamp(28px, 5vw, 40px); letter-spacing: -.01em; margin-bottom: 10px; }
+  .lead { color: var(--muted); font-size: 17px; max-width: 640px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin: 20px 0; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .card h2 { font-size: 19px; }
+  .count { color: var(--muted); font-weight: 500; }
+  .step-label { color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin: 28px 0 -8px; }
+  .steps { margin: 0 0 14px; padding-left: 20px; color: var(--muted); }
+  .steps li + li { margin-top: 4px; }
+  .steps b, .hint b { color: var(--text); font-weight: 600; }
+
+  textarea, input[type="text"], select {
+    width: 100%; font: inherit; color: var(--text); background: var(--bg-2);
+    border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px;
+  }
+  textarea.code { font-size: 13px; line-height: 1.5; min-height: 120px; resize: vertical; }
+  textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+  .err { color: var(--bad); font-size: 14px; }
+  .err:not(:empty) { margin-top: 10px; }
+  .privacy { display: flex; gap: 8px; align-items: flex-start; color: var(--ok); font-size: 13.5px; margin-top: 14px; }
+  .privacy .ic { width: 16px; height: 16px; margin-top: 2px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-size: 15px; font-weight: 600;
+    color: var(--text); background: var(--card-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px;
+    cursor: pointer; text-decoration: none; transition: border-color .15s, box-shadow .2s, transform .1s;
+  }
+  .btn:hover { border-color: #3d4456; }
+  .btn:active { transform: scale(.98); }
+  .btn.primary { border: 0; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 8px 22px rgba(109,139,255,.3); }
+  .btn.small { padding: 7px 12px; font-size: 14px; border-radius: 10px; }
+  .btn:focus-visible, label.btn:focus-within, .icon-btn:focus-visible, .chip:focus-visible, .icons button:focus-visible, .mods button:focus-visible, .seg button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  /* ---------- Lists ---------- */
+  /* minmax(0, 1fr): a long program path must shorten with "…", not stretch the list past the screen. */
+  .list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .item { min-width: 0; display: flex; align-items: center; gap: 12px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 9px 9px 9px 12px; }
+  .item-icon { width: 40px; height: 40px; border-radius: 11px; background: var(--card-2); display: grid; place-items: center; font-size: 20px; flex: none; }
+  .item-text { flex: 1; min-width: 0; }
+  .item-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-detail { color: var(--muted); font: 13px ui-monospace, "Cascadia Code", Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-detail.warn { color: var(--warn); font-family: inherit; }
+  .item-btns { display: flex; gap: 2px; flex: none; }
+  .icon-btn {
+    width: 36px; height: 36px; display: grid; place-items: center; padding: 0; color: var(--muted);
+    background: none; border: 1px solid transparent; border-radius: 10px; cursor: pointer;
+  }
+  .icon-btn:hover:not(:disabled) { color: var(--text); background: var(--card-2); border-color: var(--border); }
+  .icon-btn.del:hover:not(:disabled) { color: var(--bad); }
+  .icon-btn:disabled { opacity: .25; cursor: default; }
+  .empty { color: var(--muted); padding: 4px 2px; }
+  @media (max-width: 560px) {
+    .card { padding: 18px 16px; }
+    .item { flex-wrap: wrap; }
+    .item-btns { width: 100%; justify-content: flex-end; margin-top: -4px; }
+  }
+
+  details { margin-top: 16px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  pre {
+    margin: 10px 0 0; max-height: 340px; overflow: auto; background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; color: var(--text); tab-size: 2;
+  }
+
+  /* ---------- Add / edit sheet ---------- */
+  dialog {
+    width: min(560px, calc(100% - 24px)); max-height: calc(100% - 24px); padding: 0; overflow: auto;
+    color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6);
+  }
+  dialog::backdrop { background: rgba(5,6,10,.72); }
+  .sheet { padding: 22px; display: grid; gap: 18px; }
+  .sheet h3 { font-size: 19px; overflow-wrap: anywhere; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 13px; }
+  .seg button { font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); background: none; border: 0; border-radius: 10px; padding: 9px 6px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 7px; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 7px; }
+  .icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; margin-bottom: 10px; }
+  .icons button { height: 40px; font-size: 20px; line-height: 1; padding: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+  .icons button[aria-pressed="true"] { border-color: var(--accent); background: rgba(109,139,255,.16); box-shadow: inset 0 0 0 1px var(--accent); }
+  .icon-own { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+  .icon-own input { width: 84px; text-align: center; font-size: 18px; padding: 7px 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: inherit; font-size: 13px; color: var(--text); background: var(--bg-2); border: 1px solid var(--border); border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); }
+  .mods { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .mods button { font: inherit; font-size: 14px; font-weight: 600; min-width: 66px; color: var(--muted); background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+  .mods button[aria-pressed="true"] { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .sends { color: var(--text); font-weight: 600; }
+  .sheet-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; z-index: 50; max-width: calc(100% - 32px);
+    transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+    background: var(--card-2); border: 1px solid var(--border); border-radius: 12px; padding: 11px 16px; font-size: 14px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.5);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.bad { border-color: rgba(255,122,122,.5); }
+  footer { border-top: 1px solid var(--border); margin-top: 40px; padding: 26px 0 40px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
+</svg>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="icon-192.png" alt="">PC Remote</a>
+    <a class="back" href="index.html">← Back to download</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header>
+    <h1>Edit apps &amp; shortcuts</h1>
+    <p class="lead">Add, change, reorder and delete the buttons on your phone with clicks instead of code. No commas or backslashes to get wrong.</p>
+  </header>
+
+  <p class="step-label">Step 1</p>
+  <section class="card" aria-labelledby="loadTitle">
+    <h2 id="loadTitle" style="margin-bottom:12px">Bring in your current file</h2>
+    <ol class="steps">
+      <li>On the PC, open PC Remote (next to the clock) and click <b>Edit apps &amp; shortcuts</b>. Notepad opens.</li>
+      <li>In Notepad press <kbd>Ctrl</kbd>+<kbd>A</kbd>, then <kbd>Ctrl</kbd>+<kbd>C</kbd>. Leave Notepad open.</li>
+      <li>Paste it below with <kbd>Ctrl</kbd>+<kbd>V</kbd>.</li>
+    </ol>
+    <label class="sr-only" for="src">Your config.json</label>
+    <textarea class="code" id="src" spellcheck="false" autocomplete="off" placeholder='{ "port": 8765, "pin": "…", "apps": [ … ], "shortcuts": [ … ] }'></textarea>
+    <div class="actions">
+      <button class="btn primary" type="button" id="loadBtn">Load</button>
+      <label class="btn"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>Or open config.json<input class="sr-only" type="file" id="fileIn" accept=".json,application/json"></label>
+    </div>
+    <p class="err" id="loadErr" role="alert"></p>
+    <p class="privacy"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span>Your file stays on this computer. It holds your PIN, so this page never uploads it or saves it anywhere.</span></p>
+  </section>
+
+  <div id="editArea" class="hidden">
+    <p class="step-label">Step 2</p>
+    <section class="card" aria-labelledby="appsTitle">
+      <div class="card-head">
+        <h2 id="appsTitle">Apps <span class="count" id="appCount"></span></h2>
+        <button class="btn small" type="button" id="addApp"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Add app</button>
+      </div>
+      <ul class="list" id="appList"></ul>
+    </section>
+    <section class="card" aria-labelledby="keysTitle">
+      <div class="card-head">
+        <h2 id="keysTitle">Shortcuts <span class="count" id="keyCount"></span></h2>
+        <button class="btn small" type="button" id="addKey"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Add shortcut</button>
+      </div>
+      <ul class="list" id="keyList"></ul>
+    </section>
+
+    <p class="step-label">Step 3</p>
+    <section class="card" aria-labelledby="saveTitle">
+      <h2 id="saveTitle" style="margin-bottom:12px">Put it back on the PC</h2>
+      <ol class="steps">
+        <li>Click <b>Copy</b>.</li>
+        <li>In Notepad press <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, then <kbd>Ctrl</kbd>+<kbd>S</kbd> to save.</li>
+        <li>On the phone, tap <b>⋮ → Refresh</b>. Your changes are there.</li>
+      </ol>
+      <div class="actions">
+        <button class="btn primary" type="button" id="copyBtn"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button>
+        <button class="btn" type="button" id="downloadBtn"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Download config.json</button>
+      </div>
+      <details id="outBox">
+        <summary>Show the file</summary>
+        <pre id="out" tabindex="0" aria-label="Your new config.json"></pre>
+      </details>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">PC Remote · <a href="index.html">Download page</a></div>
+</footer>
+
+<dialog id="sheet" aria-labelledby="sheetTitle">
+  <form class="sheet" id="itemForm" novalidate>
+    <h3 id="sheetTitle">Add</h3>
+    <div class="seg" role="group" aria-label="What this button does">
+      <button type="button" id="kindApp" aria-pressed="true">Open an app or website</button>
+      <button type="button" id="kindKey" aria-pressed="false">Press a shortcut</button>
+    </div>
+    <div>
+      <label class="label" for="fName">Name</label>
+      <input type="text" id="fName" maxlength="40" autocomplete="off" placeholder="Spotify">
+    </div>
+    <div>
+      <span class="label" id="iconLabel">Icon</span>
+      <div class="icons" id="iconGrid" role="group" aria-labelledby="iconLabel"></div>
+      <label class="icon-own">Or type or paste any emoji <input type="text" id="fIcon" maxlength="16" autocomplete="off" aria-label="Icon"></label>
+    </div>
+    <div id="appFields">
+      <span class="label" id="presetLabel">Quick picks</span>
+      <div class="chips" id="presets" role="group" aria-labelledby="presetLabel"></div>
+      <label class="label" for="fTarget" style="margin-top:14px">Program, app link or website</label>
+      <input type="text" id="fTarget" autocomplete="off" spellcheck="false" placeholder="C:\Games\Game.exe   or   spotify:   or   https://…">
+      <p class="hint">For any program: right-click its shortcut, choose <b>Properties</b> and copy the <b>Target</b>. Quotes and backslashes are fine.</p>
+      <label class="label" for="fArgs" style="margin-top:14px">Extra options (optional)</label>
+      <input type="text" id="fArgs" autocomplete="off" spellcheck="false" placeholder="-fullscreen">
+    </div>
+    <div id="keyFields" class="hidden">
+      <span class="label" id="modLabel">Hold</span>
+      <div class="mods" id="mods" role="group" aria-labelledby="modLabel"></div>
+      <label class="label" for="fKey">And press</label>
+      <select id="fKey"></select>
+      <label class="label" for="fKeys" style="margin-top:14px">Shortcut</label>
+      <input type="text" id="fKeys" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="win+alt+k">
+      <p class="hint" id="sends" aria-live="polite"></p>
+    </div>
+    <p class="err" id="formErr" role="alert"></p>
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="cancelBtn">Cancel</button>
+      <button class="btn primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var each = function (list, fn) { Array.prototype.forEach.call(list, fn); };
+
+  // ---------- Keys PC Remote understands (names from its own shortcut parser) ----------
+  var MODS = ['win', 'ctrl', 'alt', 'shift'];
+  var MOD_NAMES = { win: 'Win', ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift' };
+  var ALIAS = { control: 'ctrl', windows: 'win', meta: 'win', escape: 'esc', 'return': 'enter', del: 'delete', ins: 'insert', pgup: 'pageup', pgdn: 'pagedown', prtsc: 'printscreen' };
+  var NAMES = {
+    up: 'Up arrow', down: 'Down arrow', left: 'Left arrow', right: 'Right arrow', home: 'Home', end: 'End', pageup: 'Page Up', pagedown: 'Page Down',
+    enter: 'Enter', esc: 'Esc', tab: 'Tab', space: 'Space', backspace: 'Backspace', 'delete': 'Delete', insert: 'Insert',
+    printscreen: 'Print Screen', capslock: 'Caps Lock', menu: 'Menu', plus: '+ (plus)', minus: '- (minus)', comma: ', (comma)', period: '. (period)',
+    playpause: 'Play / pause', nexttrack: 'Next track', prevtrack: 'Previous track', stop: 'Stop',
+    volumeup: 'Volume up', volumedown: 'Volume down', volumemute: 'Mute'
+  };
+  var FKEYS = [];
+  for (var n = 1; n <= 12; n++) FKEYS.push('f' + n);
+  var GROUPS = [
+    ['Letters', 'abcdefghijklmnopqrstuvwxyz'.split('')],
+    ['Numbers', '0123456789'.split('')],
+    ['Function keys', FKEYS],
+    ['Arrows and moving', ['up', 'down', 'left', 'right', 'home', 'end', 'pageup', 'pagedown']],
+    ['Common keys', ['enter', 'esc', 'tab', 'space', 'backspace', 'delete', 'insert', 'printscreen', 'capslock', 'menu']],
+    ['Symbols', ['plus', 'minus', 'comma', 'period']],
+    ['Media and volume', ['playpause', 'nexttrack', 'prevtrack', 'stop', 'volumeup', 'volumedown', 'volumemute']]
+  ];
+  var LISTED = {};
+  GROUPS.forEach(function (g) { g[1].forEach(function (k) { LISTED[k] = true; }); });
+  // The list offers F1-F12; PC Remote also takes higher F keys typed by hand.
+  function isKey(k) { return LISTED[k] === true || /^f(1[3-9]|2[0-4])$/.test(k); }
+  function keyName(k) { return MOD_NAMES[k] || (NAMES[k] || k.toUpperCase()).replace(/ \(.*\)$/, ''); }
+  function pretty(keys) { return keys.split('+').map(keyName).join(' + '); }
+
+  // "Ctrl + Alt+DEL" -> { ok: true, text: "ctrl+alt+delete" }. Modifiers come first, in PC Remote's usual order.
+  function parseKeys(text) {
+    var r = { mods: [], key: '', bad: '', twoKeys: false };
+    String(text || '').toLowerCase().split('+').forEach(function (part) {
+      var p = part.trim();
+      if (!p) return;
+      p = ALIAS[p] || p;
+      if (MODS.indexOf(p) >= 0) { if (r.mods.indexOf(p) < 0) r.mods.push(p); }
+      else if (r.key) { if (!r.bad) { r.bad = p; r.twoKeys = true; } }
+      else if (isKey(p)) r.key = p;
+      else if (!r.bad) r.bad = p;
+    });
+    r.mods.sort(function (a, b) { return MODS.indexOf(a) - MODS.indexOf(b); });
+    r.text = r.mods.concat(r.key ? [r.key] : []).join('+');
+    r.ok = !r.bad && r.text !== '';
+    return r;
+  }
+
+  var ICONS = ('🌐 🎧 🎵 🎮 🕹️ 🏆 🎬 📺 🍿 ▶️ ⏯️ 🔊 🔇 🎙️ 📷 📹 💬 📞 ✉️ 📁 📝 📋 🧮 📊 ⚙️ 🖥️ 💻 ⌨️ 🖱️ 🔒 🌙 ⏻ 🔄 🚀 ⭐ 🔥 💡 🛒 🧹 ✂️').split(' ');
+  // [name, icon, target]: targets in the same style as PC Remote's own defaults.
+  var PRESETS = [
+    ['Spotify', '🎧', 'spotify:'],
+    ['Steam Big Picture', '🎮', 'steam://open/bigpicture'],
+    ['Steam', '🎮', 'steam://open/main'],
+    ['Discord', '💬', 'discord://'],
+    ['Chrome', '🌐', 'chrome.exe'],
+    ['Edge', '🌐', 'msedge.exe'],
+    ['Task Manager', '📊', 'taskmgr.exe'],
+    ['Files', '📁', 'explorer.exe'],
+    ['Sound settings', '🔊', 'ms-settings:sound'],
+    ['YouTube', '📺', 'https://www.youtube.com'],
+    ['Netflix', '🍿', 'https://www.netflix.com'],
+    ['Twitch', '🎬', 'https://www.twitch.tv']
+  ];
+
+  var cfg = null;       // the whole file; port, pin and anything this page doesn't edit pass through untouched
+  var dirty = false;    // changed since the last Copy or Download
+  var editing = null;   // { list, i } of the item in the sheet, or null when adding
+  var kind = 'apps';    // what the sheet is set to: 'apps' or 'shortcuts'
+  var opener = null;    // element to give focus back to when the sheet closes
+
+  // ---------- Small helpers ----------
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function svg(id) {
+    var NS = 'http://www.w3.org/2000/svg', s = document.createElementNS(NS, 'svg'), u = document.createElementNS(NS, 'use');
+    s.setAttribute('class', 'ic'); s.setAttribute('aria-hidden', 'true');
+    u.setAttribute('href', '#' + id);
+    s.appendChild(u);
+    return s;
+  }
+  function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+  var toastTimer;
+  function toast(msg, bad) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (bad ? ' bad' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = 'toast'; }, bad ? 4500 : 2800);
+  }
+
+  // ---------- Step 1: load ----------
+  function load(text) {
+    var err = $('loadErr'), data;
+    err.textContent = '';
+    if (!text.trim()) { err.textContent = 'Paste your config.json first.'; return; }
+    try { data = JSON.parse(text.replace(/^\uFEFF/, '')); }
+    catch (e) { err.textContent = 'This isn\'t a whole config.json (' + e.message + '). In Notepad, press Ctrl+A before Ctrl+C so all of it is copied.'; return; }
+    if (!data || typeof data !== 'object' || Array.isArray(data) || !('apps' in data || 'shortcuts' in data)) {
+      err.textContent = 'This doesn\'t look like PC Remote\'s config.json: it has no apps or shortcuts.';
+      return;
+    }
+    var lists = ['apps', 'shortcuts'];
+    for (var i = 0; i < lists.length; i++) {
+      var l = data[lists[i]];
+      if (l == null) { data[lists[i]] = []; continue; }
+      var broken = !Array.isArray(l) || l.some(function (x) { return !x || typeof x !== 'object' || Array.isArray(x); });
+      if (broken) { err.textContent = 'The "' + lists[i] + '" part of this file isn\'t in the usual shape, so it can\'t be edited safely here.'; return; }
+    }
+    if (dirty && !confirm('Load this file? Changes you haven\'t copied yet will be lost.')) return;
+    cfg = data;
+    dirty = false;
+    render();
+    $('editArea').classList.remove('hidden');
+    $('editArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('Loaded ' + plural(cfg.apps.length, 'app') + ' and ' + plural(cfg.shortcuts.length, 'shortcut'));
+  }
+
+  $('loadBtn').onclick = function () { load($('src').value); };
+  $('src').addEventListener('paste', function () { setTimeout(function () { load($('src').value); }, 0); });
+  $('fileIn').onchange = function () {
+    var file = this.files && this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () { $('src').value = reader.result; load(reader.result); };
+    reader.onerror = function () { $('loadErr').textContent = 'That file couldn\'t be read.'; };
+    reader.readAsText(file);
+    this.value = '';
+  };
+
+  // ---------- Step 2: lists ----------
+  function render() {
+    renderList('apps', $('appList'));
+    renderList('shortcuts', $('keyList'));
+    $('appCount').textContent = '(' + cfg.apps.length + ')';
+    $('keyCount').textContent = '(' + cfg.shortcuts.length + ')';
+    $('out').textContent = output();
+  }
+
+  function renderList(list, ul) {
+    var items = cfg[list];
+    ul.textContent = '';
+    if (!items.length) {
+      ul.appendChild(el('li', 'empty', list === 'apps' ? 'No apps yet. Add one, like Spotify or a game.' : 'No shortcuts yet. Add one, like Alt + Tab.'));
+      return;
+    }
+    items.forEach(function (it, i) {
+      var li = el('li', 'item'), text = el('div', 'item-text'), name = it.name || 'this item', detail;
+      li.appendChild(el('span', 'item-icon', it.icon || '⭐'));
+      text.appendChild(el('div', 'item-name', it.name || '(no name)'));
+      if (list === 'apps') {
+        detail = el('div', 'item-detail', (it.target || '(nothing to open)') + (it.args ? '  ' + it.args : ''));
+      } else {
+        var p = parseKeys(it.keys);
+        detail = p.ok ? el('div', 'item-detail', pretty(p.text))
+                      : el('div', 'item-detail warn', '“' + (it.keys || '') + '”: PC Remote won\'t understand this. Edit it to fix.');
+      }
+      detail.title = detail.textContent;
+      text.appendChild(detail);
+      li.appendChild(text);
+      var btns = el('div', 'item-btns');
+      btns.setAttribute('data-list', list);
+      btns.setAttribute('data-i', i);
+      btns.appendChild(iconBtn('up', 'Move ' + name + ' up', 'i-up', i === 0));
+      btns.appendChild(iconBtn('down', 'Move ' + name + ' down', 'i-down', i === items.length - 1));
+      btns.appendChild(iconBtn('edit', 'Edit ' + name, 'i-edit', false));
+      btns.appendChild(iconBtn('del', 'Delete ' + name, 'i-trash', false));
+      li.appendChild(btns);
+      ul.appendChild(li);
+    });
+  }
+
+  function iconBtn(act, label, icon, disabled) {
+    var b = el('button', 'icon-btn' + (act === 'del' ? ' del' : ''));
+    b.type = 'button';
+    b.disabled = disabled;
+    b.title = label;
+    b.setAttribute('aria-label', label);
+    b.setAttribute('data-act', act);
+    b.appendChild(svg(icon));
+    return b;
+  }
+
+  function changed() { dirty = true; render(); }
+
+  // After a list is redrawn, put keyboard focus back on the same kind of button on the moved row.
+  function focusRow(list, i, act) {
+    var rows = $(list === 'apps' ? 'appList' : 'keyList').querySelectorAll('.item-btns');
+    var row = rows[Math.min(i, rows.length - 1)];
+    if (!row) return;
+    var b = row.querySelector('[data-act="' + act + '"]');
+    if (!b || b.disabled) b = row.querySelector('[data-act="edit"]');
+    b.focus();
+  }
+
+  function onListClick(e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var box = b.parentNode, list = box.getAttribute('data-list'), i = +box.getAttribute('data-i');
+    var items = cfg[list], act = b.getAttribute('data-act');
+    if (act === 'edit') { openSheet(list, i); return; }
+    if (act === 'del') {
+      if (!confirm('Delete “' + (items[i].name || 'this item') + '”?')) return;
+      var gone = items.splice(i, 1)[0];
+      changed();
+      focusRow(list, i, 'edit');
+      toast('Deleted “' + (gone.name || 'item') + '”');
+      return;
+    }
+    var j = act === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= items.length) return;
+    var t = items[i]; items[i] = items[j]; items[j] = t;
+    changed();
+    focusRow(list, j, act);
+  }
+  $('appList').onclick = onListClick;
+  $('keyList').onclick = onListClick;
+
+  // ---------- Add / edit sheet ----------
+  var sheet = $('sheet'), keySel = $('fKey');
+
+  ICONS.forEach(function (icon) {
+    var b = el('button', '', icon);
+    b.type = 'button';
+    b.setAttribute('aria-label', icon);
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = function () { setIcon(icon); };
+    $('iconGrid').appendChild(b);
+  });
+  function markIcon(v) { each($('iconGrid').children, function (b) { b.setAttribute('aria-pressed', String(b.textContent === v)); }); }
+  function setIcon(v) { $('fIcon').value = v; markIcon(v); }
+  $('fIcon').addEventListener('input', function () { markIcon(this.value.trim()); });
+
+  PRESETS.forEach(function (p) {
+    var b = el('button', 'chip', p[1] + ' ' + p[0]);
+    b.type = 'button';
+    b.onclick = function () {
+      // Fill in the name and icon too, unless the user already chose their own.
+      var isPresetName = function (v) { return !v || PRESETS.some(function (q) { return q[0] === v; }); };
+      var isPresetIcon = function (v) { return !v || PRESETS.some(function (q) { return q[1] === v; }); };
+      if (isPresetName($('fName').value.trim())) $('fName').value = p[0];
+      if (isPresetIcon($('fIcon').value.trim())) setIcon(p[1]);
+      $('fTarget').value = p[2];
+      $('fArgs').value = '';
+      $('fTarget').focus();
+    };
+    $('presets').appendChild(b);
+  });
+
+  MODS.forEach(function (m) {
+    var b = el('button', '', MOD_NAMES[m]);
+    b.type = 'button';
+    b.setAttribute('data-mod', m);
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); compose(); };
+    $('mods').appendChild(b);
+  });
+  keySel.appendChild(new Option('No key (only the ones above)', ''));
+  GROUPS.forEach(function (g) {
+    var og = document.createElement('optgroup');
+    og.label = g[0];
+    g[1].forEach(function (k) { og.appendChild(new Option(NAMES[k] || k.toUpperCase(), k)); });
+    keySel.appendChild(og);
+  });
+
+  // Buttons and list -> text box.
+  function compose() {
+    var mods = [];
+    each($('mods').children, function (b) { if (b.getAttribute('aria-pressed') === 'true') mods.push(b.getAttribute('data-mod')); });
+    $('fKeys').value = mods.concat(keySel.value ? [keySel.value] : []).join('+');
+    showSends();
+  }
+  // Text box -> buttons and list, so typing "ctrl+shift+t" lights up Ctrl and Shift and picks T.
+  function syncBuilder() {
+    var p = parseKeys($('fKeys').value);
+    each($('mods').children, function (b) { b.setAttribute('aria-pressed', String(p.mods.indexOf(b.getAttribute('data-mod')) >= 0)); });
+    keySel.value = LISTED[p.key] ? p.key : '';
+    showSends();
+  }
+  function showSends() {
+    var p = parseKeys($('fKeys').value);
+    $('sends').innerHTML = '';
+    if (p.ok) { $('sends').appendChild(document.createTextNode('Sends ')); $('sends').appendChild(el('span', 'sends', pretty(p.text))); }
+  }
+  keySel.onchange = compose;
+  $('fKeys').addEventListener('input', syncBuilder);
+
+  function setKind(k) {
+    kind = k;
+    $('kindApp').setAttribute('aria-pressed', String(k === 'apps'));
+    $('kindKey').setAttribute('aria-pressed', String(k === 'shortcuts'));
+    $('appFields').classList.toggle('hidden', k !== 'apps');
+    $('keyFields').classList.toggle('hidden', k !== 'shortcuts');
+  }
+  $('kindApp').onclick = function () { setKind('apps'); };
+  $('kindKey').onclick = function () { setKind('shortcuts'); };
+
+  function openSheet(list, i) {
+    var it = i == null ? {} : cfg[list][i];
+    editing = i == null ? null : { list: list, i: i };
+    opener = document.activeElement;
+    $('sheetTitle').textContent = i == null ? (list === 'apps' ? 'Add an app' : 'Add a shortcut') : 'Edit “' + (it.name || '') + '”';
+    $('fName').value = it.name || '';
+    setIcon(it.icon || '');
+    $('fTarget').value = it.target || '';
+    $('fArgs').value = it.args || '';
+    $('fKeys').value = it.keys || '';
+    syncBuilder();
+    $('formErr').textContent = '';
+    setKind(list);
+    if (sheet.showModal) sheet.showModal(); else sheet.setAttribute('open', '');
+    $('fName').focus();
+  }
+  function closeSheet(restore) {
+    if (sheet.close) sheet.close(); else sheet.removeAttribute('open');
+    if (restore && opener && opener.focus) opener.focus();
+  }
+  $('cancelBtn').onclick = function () { closeSheet(true); };
+  sheet.addEventListener('cancel', function (e) { e.preventDefault(); closeSheet(true); });
+  $('addApp').onclick = function () { openSheet('apps', null); };
+  $('addKey').onclick = function () { openSheet('shortcuts', null); };
+
+  // A Windows shortcut's Target looks like "C:\Program Files\App\app.exe" -fullscreen.
+  // PC Remote wants the program and its options apart, without the quotes.
+  function splitTarget(target, args) {
+    target = target.trim();
+    args = args.trim();
+    var m = /^"([^"]*)"\s*(.*)$/.exec(target);
+    if (m) {
+      target = m[1].trim();
+      if (m[2]) args = args ? m[2] + ' ' + args : m[2];
+    }
+    return { target: target, args: args };
+  }
+
+  // New app ids come from the name ("Steam Big Picture" -> "steam-big-picture") and never clash.
+  // Existing ids are kept: the phone opens apps by id.
+  function newId(name) {
+    var base = name.toLowerCase();
+    if (base.normalize) base = base.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+    base = base.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'app';
+    var used = {};
+    cfg.apps.forEach(function (a) { if (a && a.id) used[a.id] = true; });
+    var id = base, n = 2;
+    while (used[id]) id = base + '-' + n++;
+    return id;
+  }
+
+  var ORDER = { apps: ['id', 'name', 'icon', 'target', 'args'], shortcuts: ['name', 'icon', 'keys'] };
+  var OWN = { id: 1, name: 1, icon: 1, target: 1, args: 1, keys: 1 };
+  // Builds the item to save. An edited item keeps its key order and any fields this page doesn't know,
+  // so the file changes only where the user changed something.
+  function build(k, base, same, fields) {
+    var out = {}, key;
+    if (same) for (key in base) out[key] = key in fields ? fields[key] : base[key];
+    ORDER[k].forEach(function (f) { if (!(f in out)) out[f] = fields[f]; });
+    if (base && !same) for (key in base) if (!OWN[key] && !(key in out)) out[key] = base[key];
+    return out;
+  }
+
+  $('itemForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var err = $('formErr'), name = $('fName').value.trim(), icon = $('fIcon').value.trim() || '⭐', fields;
+    function fail(msg, id) { err.textContent = msg; $(id).focus(); }
+    err.textContent = '';
+    if (!name) return fail('Give it a name, like Spotify.', 'fName');
+    if (kind === 'apps') {
+      var t = splitTarget($('fTarget').value, $('fArgs').value);
+      if (!t.target) return fail('Choose a quick pick, or type a program, app link or website.', 'fTarget');
+      fields = { name: name, icon: icon, target: t.target, args: t.args };
+    } else {
+      var p = parseKeys($('fKeys').value);
+      if (!p.ok) {
+        return fail(p.twoKeys ? 'A shortcut has one main key. Remove “' + p.bad + '”.'
+          : p.bad ? 'PC Remote doesn\'t know the key “' + p.bad + '”. Pick it from the list instead.'
+          : 'Choose the keys for this shortcut.', p.bad ? 'fKeys' : 'fKey');
+      }
+      fields = { name: name, icon: icon, keys: p.text };
+    }
+    var base = editing ? cfg[editing.list][editing.i] : null;
+    var same = !!editing && editing.list === kind;
+    if (kind === 'apps') fields.id = (same && base.id) || newId(name);
+    var item = build(kind, base, same, fields), at;
+    if (same) {
+      cfg[kind][editing.i] = item;
+      at = editing.i;
+    } else {
+      if (editing) cfg[editing.list].splice(editing.i, 1);
+      cfg[kind].push(item);
+      at = cfg[kind].length - 1;
+    }
+    closeSheet(false);
+    changed();
+    focusRow(kind, at, 'edit');
+    toast('Saved “' + name + '”. Copy the file in step 3 when you\'re done.');
+  });
+
+  // ---------- Step 3: output ----------
+  // Same layout PC Remote writes: 2-space indent, Windows line breaks, emoji as they are.
+  function output() { return JSON.stringify(cfg, null, 2).replace(/\n/g, '\r\n'); }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var t = el('textarea');
+      t.value = text;
+      t.setAttribute('readonly', '');
+      t.style.position = 'fixed';
+      t.style.opacity = '0';
+      document.body.appendChild(t);
+      t.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(t);
+      if (ok) resolve(); else reject(new Error('copy blocked'));
+    });
+  }
+
+  $('copyBtn').onclick = function () {
+    var label = this.querySelector('span');
+    copyText(output()).then(function () {
+      dirty = false;
+      label.textContent = 'Copied!';
+      setTimeout(function () { label.textContent = 'Copy'; }, 1800);
+      toast('Copied. In Notepad: Ctrl+A, Ctrl+V, then Ctrl+S.');
+    }, function () {
+      $('outBox').open = true;
+      var range = document.createRange();
+      range.selectNodeContents($('out'));
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      toast('Your browser blocked copying. The file is selected below: press Ctrl+C.', true);
+    });
+  };
+
+  $('downloadBtn').onclick = function () {
+    var url = URL.createObjectURL(new Blob([output()], { type: 'application/json' }));
+    var a = el('a');
+    a.href = url;
+    a.download = 'config.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    dirty = false;
+    toast('Downloaded. Save it over the old config.json, or paste it into Notepad.');
+  };
+
+  window.addEventListener('beforeunload', function (e) {
+    if (!dirty) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+})();
+</script>
+</body>
+</html>
